@@ -1,0 +1,30 @@
+#!/bin/bash
+
+while pgrep vlc > /dev/null
+do
+	sleep .5
+	curl -s -u :play http://127.0.0.1:8080/requests/status.xml -o /tmp/status.xml #--trace curl
+	length=$(xmllint --xpath '//length/text()' /tmp/status.xml)
+	elapsed_time=$(xmllint --xpath '//time/text()' /tmp/status.xml)
+	time_left=$(echo "$length-$elapsed_time" | bc)
+
+	xmllint --xpath '//information/category[@name="meta"]/info[@name="filename"]/text()' /tmp/status.xml > /tmp/nowplaying
+	echo -n "+" >> /tmp/nowplaying
+	printf '%dm:%ds' $(($elapsed_time%3600/60)) $(($elapsed_time%60)) >> /tmp/nowplaying
+	#printf '%.s─' {1..2} >> /tmp/nowplaying  #long hyphen or emdash as they call it
+	echo -n "   -" >> /tmp/nowplaying
+	printf '%dm:%ds\n' $(($time_left%3600/60)) $(($time_left%60)) >> /tmp/nowplaying
+	#printf '%dm:%ds\n' $(($time_left%3600/60)) $(($time_left%60)) >> /tmp/nowplaying
+	#printf '%dh:%dm:%ds\n' $(($time_left/3600)) $(($time_left%3600/60)) $(($time_left%60)) >> /tmp/nowplaying
+	sed -e "s/&amp;#39;/\'/g" -e 's/&amp;amp;/\&/g' -e 's/.mp3//gI' -e 's/.m4a//gI' -e 's/.mp4//gI' -e 's/.wav//gI' -e 's/.aac//gI' -e 's/.adts//gI' -e 's/.webm//gI' /tmp/nowplaying > /tmp/nowplaying2
+
+done
+
+rm /tmp/nowplaying
+rm /tmp/nowplaying2
+
+
+#wget -q --http-user= --http-password=play http://127.0.0.1:8080/requests/status.xml -O /tmp/status.xml
+#res=$? #get curl exit code
+#echo $res
+#printf '%dh:%dm:%ds\n' $(($time_left/3600)) $(($time_left%3600/60)) $(($time_left%60)) >> /tmp/nowplaying
